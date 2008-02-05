@@ -1,0 +1,15 @@
+Revision history for Perl extension OOP.
+
+Version 1.0
+-----------
+The first release of the OOP module handles properties that are passed
+to the constructor of any module.  It permits a developer to define
+various rules these properties have to follow in order for the custom
+module to function.  Thus, if a developer distributes a module he or she
+can now rest easy that the intended parameters are passed along with
+proper values before the modules can be used.
+
+No other functionality is added as this release serves more of a
+foundation for things to come.  I'm taking baby steps here.  Suggestions
+are welcome!
+
