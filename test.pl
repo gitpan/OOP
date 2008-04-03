@@ -375,7 +375,7 @@ my $obj = OOP->new({
 
 print "Testing dynamic element creation violation... ";
 eval { $obj->{PROPERTIES}->{three}{hi}{joe} = ['shmo'] };
-print $@ =~ /not a defined(.*)at (.\/)?test.pl line \d+/ ? 'Ok' : 'Error';
+print $@ =~ /is write protected(.*)at (.\/)?test.pl line \d+/ ? 'Ok' : 'Error';
 print "\n";
 
 print "\n";

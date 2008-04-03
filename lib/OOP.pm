@@ -5,7 +5,6 @@ use OOP::Accessor;
 @ISA = qw(OOP::Constructor OOP::Accessor);
 
 use strict;
-#use base qw(OOP::Constructor);
 
 #***************************************************************************
 ############################################################################
@@ -13,9 +12,9 @@ use strict;
 #
 # Author  : Milan Adamovsky
 # Date    : 01/14/2008
-# Updated : 01/14/2008
+# Updated : 04/03/2008
 #
-# Version : 1.0
+# Version : 1.01
 #
 # Copyright 2007-Present Milan Adamovsky.  All rights reserved.
 # It may be used and modified freely, but I do request that this copyright
@@ -31,9 +30,15 @@ use strict;
 #           POD found attached below.  To read it simply type the command
 #           'perldoc OOP' at the command-prompt or simply scroll down.
 #
+# History : 04/03/2008 - Version 1.01
+#           Fixed logic that if a dataType is a hash with a writeAccess
+#           of '1', that any elements not specified in the value can be
+#           added dynamically and do not have to be explicitly specified.
+#           Added missing EXISTS to _getArgs.pm
+#
 #***************************************************************************
 
-$OOP::VERSION='1.00';
+$OOP::VERSION='1.01';
 
 sub new {
 
@@ -45,6 +50,51 @@ sub new {
 
  return $self;
  
+}
+
+#***************************************************************************  
+#*[_init]*******************************************************************
+# PLACEHOLDER FOR FUTURE . NOT USED UNTIL THIS NOTICE IS REMOVED!
+sub _init
+{ 
+
+ no strict;
+
+ my ($self, $ARGS) = @_;
+
+ my $caller = $ARGS->{caller};
+ my $callerPkg = ref $ARGS->{caller};
+ my $pluginFolder = "./$callerPkg/Core";
+
+ my $obj;
+
+ opendir(COMPONENTS, $pluginFolder);
+  my @files = readdir(COMPONENTS);
+ closedir(COMPONENTS);
+
+ map {
+      /(.*)\.pm/;
+      my $cpy = $1;
+
+      if ($cpy)
+       {
+        ($cpy->use && print "Loading " . $cpy . " version ");
+        $obj = $cpy->new($caller);
+        
+        if ($obj->{inherit})
+         {
+          push(@$callerPkg::ISA, $cpy) 
+         }
+         
+        $caller->{CORE}->{$cpy} = $obj;
+        
+        print ${$cpy.'::VERSION'} . "... ";
+        print "Ok.\n";
+       }
+     } @files;
+
+ return();
+
 }
 
 1;
@@ -65,7 +115,7 @@ OOP - Object Oriented Programming Class
 
   # These are the parameters normally passed 
   # to a class using OOP.pm.
-  
+   
   my $classPrototype = {
              one => 1,
              two => 2,
@@ -140,9 +190,9 @@ or not the property is read-only, and more...
 The approach used in this class to handled properties relies on PERL's I<tie()> 
 function. It is a very useful though often misunderstood and underused feature. 
 Don't worry because this class takes care of everything for the developer; thus, 
-not even a fundamental understanding of I<tie()> is necessary.  The code is readily 
-available to those who desire to understand what is happening, but again it is 
-not necessary to do so to use this class.
+not even a fundamental understanding of I<tie()> is necessary.  The code is 
+readily available to those who desire to understand what is happening, but 
+again it is not necessary to do so to use this class.
 
 =head2 PROPERTIES
 
@@ -160,10 +210,10 @@ terminology that might overlap.  Let's go over these properties.
 =item B<System Attributes>
 
 The first type of properties are those passed to the constructor of the OOP
-class. For sake of concept separation we will refer to these as I<attributes>.  These are 
-properties that are more or less static and required for the class to know how 
-it is to operate and what it is to operate on.  If this doesn't make sense, simply 
-know that these are B<required>.  
+class. For sake of concept separation we will refer to these as I<attributes>.  
+These are properties that are more or less static and required for the class to 
+know how it is to operate and what it is to operate on.  If this doesn't make 
+sense, simply know that these are B<required>.  
 
 These attributes are set when the class is instantiated (or called), as such:
 
@@ -173,13 +223,13 @@ These attributes are set when the class is instantiated (or called), as such:
                       CUSTOM => {}
                      });
 
-The argument is an anonymous hash where the keys are the I<system attributes>. If 
-this doesn't make sense to you, simply know to follow the convention above and 
-include the parenthesis and curly brackets as shown above. 
+The argument is an anonymous hash where the keys are the I<system attributes>. 
+If this doesn't make sense to you, simply know to follow the convention above 
+and include the parenthesis and curly brackets as shown above. 
 
 The corresponding values are hash references. Do not worry about these for right 
-now as it would take away from our focus.  Let's keep our focus on the attributes 
-themselves.
+now as it would take away from our focus.  Let's keep our focus on the 
+attributes themselves.
 
 Presently there are the following system attributes (in alphabetical order):
 
@@ -193,34 +243,35 @@ in this document will illustrate this better.
 
 =item B<CUSTOM>
 
-This property doesn't exist but is a place holder for future development.  Due to 
-the strict nature of this class, it is intended to provide a point of entry (or 
-exit) in the event a user would choose to customize the class. 
+This property doesn't exist but is a place holder for future development.  Due 
+to the strict nature of this class, it is intended to provide a point of entry 
+(or exit) in the event a user would choose to customize the class. 
 
 =item B<PROTOTYPE>
 
 This property contains all the properties and their I<definitions>. Collectively 
 this represents the "I<prototype>" for the constructor of the user class.
 
-The prototype is, in effect, the I<design> of how the properties are to be handled 
-by the OOP class (and consequently the user class).
+The prototype is, in effect, the I<design> of how the properties are to be 
+handled by the OOP class (and consequently the user class).
 
 =back
 
-These attributes happen to be the other two types of properties.  It is important to 
-remember that unless otherwise specified all system attributes are required.  All 
-system attributes are reserved meaning that a developer should never clutter the 
-namespace by adding custom keys as they could override future developments causing 
-for undesirable side-effects.  For this purpose use the B<CUSTOM> system attribute 
-as a safe attribute to funnel your custom data through.
+These attributes happen to be the other two types of properties.  It is 
+important to remember that unless otherwise specified all system attributes are 
+required.  All system attributes are reserved meaning that a developer should 
+never clutter the namespace by adding custom keys as they could override future 
+developments causing for undesirable side-effects.  For this purpose use the 
+B<CUSTOM> system attribute as a safe attribute to funnel your custom data 
+through.
 
 =item B<Prototype Properties>
 
 This is possibly one of the coolest features of the OOP class.  It permits the 
-developer to define accessibility to properties in more ways than just either hiding 
-the information or not (encapsulation).  As a matter of fact it allows to control 
-properties to an unprecendented level allowing the developer to control how much or 
-how little access to a property a user class should have. 
+developer to define accessibility to properties in more ways than just either 
+hiding the information or not (encapsulation).  As a matter of fact it allows to 
+control properties to an unprecendented level allowing the developer to control 
+how much or how little access to a property a user class should have. 
 
 The prototype is built by way of a hash that is passed to the constructor of the 
 OOP class via the I<system attributes> (see above), as such:
@@ -229,26 +280,27 @@ OOP class via the I<system attributes> (see above), as such:
                       ARGS=> $objectProperties,
                       PROTOTYPE => {
                                     one => {
-				            dataType => 'hash',
-				            allowEmpty => 0,
-				            maxLength => 3,
-				            minLength => 1,
-				            readAccess => 1,
-				            required => 1,
-				            value => {
-				                      abye => '',
-				                      bbye => {...}
-				                     },
-				            writeAccess => 1                                      
- 			                   },
- 			            two => 'foobar',
- 			            three => [1,2,3,4]
-                                   },
-                       CUSTOM => {}
+                                            dataType => 'hash',
+                                            allowEmpty => 0,
+                                            maxLength => 3,
+                                            minLength => 1,
+                                            readAccess => 1,
+                                            required => 1,
+                                            value => {
+                                                      abye => '',
+                                                      bbye => {...}
+                                                     },
+                                            writeAccess => 1                                      
+                                           },
+                                   two => 'foobar',
+                                   three => [1,2,3,4]
+                                  },
+                      CUSTOM => {}
                      });
 
-Attention should be given to the B<PROTOTYPE> attribute in the above illustration 
-where we can see an example of how the prototype properties are implemented.
+Attention should be given to the B<PROTOTYPE> attribute in the above 
+illustration where we can see an example of how the prototype properties are 
+implemented.
 
 The above illustrates how to define the various restrictions to a particular 
 property.  Keep in mind that this is only the prototype so it does not directly 
@@ -341,9 +393,9 @@ supported or enforced as of this writing.
 
 =item B<'hash'>
 
-Specifies the maximum possible elements in the hash structure.  This is enforced both 
-when the hash is passed as a parameter to the constructor as well as when an element 
-is attempted to be added dynamically at runtime.
+Specifies the maximum possible elements in the hash structure.  This is enforced
+both when the hash is passed as a parameter to the constructor as well as when 
+an element is attempted to be added dynamically at runtime.
 
 =item B<'scalar'>
 
@@ -366,11 +418,11 @@ set to '0' however then an accessor needs to be used to access the property safe
 
 =item B<required> 
 
-A boolean that takes either a 1 or a 0 as a value.  Specifies whether or not this 
-property is required or optional.  If a property definition is not given to a 
-particular property then it is assumed that the element in the prototype is always 
-required.  This gives the developer the ability to override that behavior by 
-setting it to 0 (zero). 
+A boolean that takes either a 1 or a 0 as a value.  Specifies whether or not 
+this property is required or optional.  If a property definition is not given to
+a particular property then it is assumed that the element in the prototype is 
+always required.  This gives the developer the ability to override that behavior 
+by setting it to 0 (zero). 
 
 When this property is set to zero it means that the value is not required but IF 
 it exists and if a property definition exists (which it does in this case), then 
@@ -388,15 +440,15 @@ the user class.  See B<Prototype Properties> for more information on B<value>.
 
 =item B<writeAccess> 
 
-A boolean that takes either a 1 or a 0 as a value.  This determines whether a user 
-can write to the data in the property.  If it is set to '1' then the 
-user can write and thus overwrite it by specifying a new value.  If it is 
-set to '0' however then this property becomes a read-only property.
+A boolean that takes either a 1 or a 0 as a value.  This determines whether a 
+user can dynamically write to the data in the property.  If it is set to '1' 
+then the user can write and thus overwrite it by specifying a new value.  If it 
+is set to '0' however then this property becomes a read-only property.
 
-Additionally, if this is set to zero and the B<dataType> is a I<hash> or an I<array>,
-then it defines whether or not elements may be created on-the-fly or by passing 
-non-defined elements to the constructor (elements that were not defined in the 
-prototype).
+Additionally, if this is set to '0' and the B<dataType> is a I<hash> or an 
+I<array>, then it declares that elements may not be created on-the-fly or by 
+passing non-defined elements to the constructor (elements that were not defined 
+in the prototype).  Likewise if it is set to '1', then the opposite holds true.
 
 =back
 

@@ -1,4 +1,4 @@
-OOP version 1.00
+OOP version 1.01
 ================
 
 This class is intended to complement Object Oriented Programming ("OOP")
@@ -12,17 +12,9 @@ Simply stated, this class attempts to take out as much of the OOP overhead
 for the developer as possible while at the same time allowing a developer 
 to write more robust applications.
 
-Version 1.0
------------
-The first release of the OOP module handles properties that are passed
-to the constructor of any module.  It permits a developer to define 
-various rules these properties have to follow in order for the custom
-module to function.  Thus, if a developer distributes a module he or she
-can now rest easy that the intended parameters are passed along with 
-proper values before the modules can be used.
-
-No other functionality is added as this release serves more of a 
-foundation for things to come.  I'm taking baby steps here.  Suggestions
+This module presently covers a limited area in Object Oriented Programming.
+More bells and wistles will be added as needed. This release serves more of 
+a foundation for things to come.  I'm taking baby steps here.  Suggestions
 are welcome!
 
 See the file Changes for a history of all changes.
@@ -36,12 +28,11 @@ To install this module type the following:
    make test
    make install
 
-COPYRIGHT AND LICENCE
+LICENSE
 
 Copyright (C) 2008 by Milan Adamovsky
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,
 at your option, any later version of Perl 5 you may have available.
-
 

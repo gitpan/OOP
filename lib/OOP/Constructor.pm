@@ -1,5 +1,6 @@
 package OOP::Constructor;
 
+use strict;
 use Carp;
 use OOP::_getArgs;
 

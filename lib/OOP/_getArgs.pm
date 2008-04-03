@@ -3,6 +3,15 @@ package OOP::_getArgs;
 use strict;
 use Carp;
 
+sub EXISTS {
+
+ my ($self,$key) = @_;
+
+ my $value = $self->{ARGS};
+ 
+ return (exists $value->{$key});
+
+}
 sub TIEHASH {
 
  my ($class, $ARGS) = @_;
@@ -20,18 +29,24 @@ sub TIEHASH {
 sub STORE {
 
  my ($self, $key, $val) = @_;
- 
+
  my $value = $self->{ARGS};
  my $myProto = $self->{PROTOTYPE};
 
  my $_mainobj = $self->{_MAIN} || $self;
+
  my $_parent = $_mainobj->{_INDEX}->{$value}->{parent};
  my $_parentkey = $_mainobj->{_INDEX}->{$value}->{parentkey};
  my $_parentPrototype = $_parent->{proto}->{$_parentkey};
 
  my $_currPrototype;
 
- if (exists($value->{$key}) && exists($myProto->{$key}) && ref $myProto->{$key} eq 'HASH' && ref $_parentPrototype eq 'HASH' && !exists($myProto->{$key}->{dataType}))
+ if (exists($value->{$key}) &&
+     exists($myProto->{$key}) && 
+     ref $myProto->{$key} eq 'HASH' && 
+     ref $_parentPrototype eq 'HASH' && 
+     !exists($myProto->{$key}->{dataType})
+    )
   {
    $_currPrototype = $_parentPrototype;
   }
@@ -43,7 +58,6 @@ sub STORE {
   {
    my $protoVal = $myProto->{$key};
    my $dataType = exists($myProto->{$key}) ? ($myProto->{$key} ne '' ? ref($myProto->{$key}) : 'scalar') : (ref $val || 'scalar');
-   
    if ((ref $myProto->{$key} eq 'ARRAY') && (scalar @{$myProto->{$key}} == 0))
     {
      $protoVal = '';
@@ -56,7 +70,6 @@ sub STORE {
     {
      $protoVal = '';
     }
-
    $_currPrototype->{dataType} = $dataType;
    $_currPrototype->{writeAccess} = $protoVal eq '' ? 1 : 0;
    $_currPrototype->{readAccess} = 1;
@@ -65,7 +78,6 @@ sub STORE {
    $_currPrototype->{required} = 1;
    $_currPrototype->{minLength} = $_currPrototype->{maxLength} = length($protoVal) if $protoVal ne '' ;
    $_currPrototype->{value} = $myProto->{$key};
-   
   }
   
  if (uc($_currPrototype->{dataType}) eq 'HASH')
@@ -91,7 +103,7 @@ sub STORE {
     
     uc($_currPrototype->{dataType}) eq $valType || croak "Attempt to pass improper data type to '$key'!";
   }
- 
+
  $self->_checkArgs({
  		    key => $key,
                     action => 'store',
@@ -143,7 +155,7 @@ sub FETCH {
                     key => $key, 
                     action => 'fetch',
                     argsRef => $value,
- 		    hashRef => $myProto
+                    hashRef => $myProto
                    });
 
  if (ref $myProto eq 'HASH')
@@ -152,13 +164,13 @@ sub FETCH {
                     (exists($myProto->{$key}->{dataType})) && 
                     (uc($myProto->{$key}->{dataType}) eq 'HASH')) ?
                      $myProto->{$key}->{value}:
-  	             $myProto->{$key};
+  	                 $myProto->{$key};
 
    $_mainobj->{_INDEX}->{$value} = {
                                     parent => $_parent,
                                     parentkey => $_parentkey
                                    };
-                               
+  
    if (ref($value->{$key}) eq 'HASH')
     { 
      my $obj = tie(my %test, 'OOP::_getArgs', {
@@ -218,8 +230,9 @@ sub _checkArgs {
    else
     {
      my $_mainobj = $self->{_MAIN} || $self;
-     my $_parent = $_mainobj->{_INDEX}->{$argsRef}->{parent};
-     my $_parentkey = $_mainobj->{_INDEX}->{$argsRef}->{parentkey};
+     
+     my $_parent = $_mainobj->{_INDEX}->{$argsRef}->{parent} || $self->{PARENT};
+     my $_parentkey = $_mainobj->{_INDEX}->{$argsRef}->{parentkey}  || $self->{PARENTKEY};
      my $_parentPrototype = $_parent->{proto}->{$_parentkey};
 
      $ARGS->{_prototype} = $_parentPrototype;
@@ -265,7 +278,12 @@ sub _checkParameter {
      }
     elsif (!exists($argsRef->{$accessKey}) && (!exists($hashRef->{$accessKey})))
      {
-      croak "Parameter '$accessKey' is not a defined key!";
+      if (((uc($action) ne 'STORE') && (uc($_prototype->{dataType}) eq 'HASH')) ||
+          (uc($_prototype->{dataType}) ne 'HASH')
+         )
+       {
+        croak "Parameter '$accessKey' is not a defined key!";
+       } 
      }
    }
 
@@ -282,8 +300,11 @@ sub _checkAttributes {
  my $_countUp = 0;
 
  my $_mainobj = $self->{_MAIN} || $self;
- my $_parent = $_mainobj->{_INDEX}->{$argsRef}->{parent};
- my $_parentkey = $_mainobj->{_INDEX}->{$argsRef}->{parentkey};
+ 
+ my $_parent = $_mainobj->{_INDEX}->{$argsRef}->{parent} || $self->{PARENT};
+ my $_parentkey = $_mainobj->{_INDEX}->{$argsRef}->{parentkey}  || $self->{PARENTKEY};
+# my $_parent = $_mainobj->{_INDEX}->{$argsRef}->{parent};
+# my $_parentkey = $_mainobj->{_INDEX}->{$argsRef}->{parentkey};
  my $_parentArgs = $_parent->{args}->{$_parentkey};
  my $_parentPrototype = $_parent->{proto}->{$_parentkey};
 
@@ -297,7 +318,7 @@ sub _checkAttributes {
  my $_isChild = ($_parentPrototype eq $attribute) ? 1 : 0;
  
  my $xvalue = (uc($action) eq 'STORE') || (uc($action) eq 'FETCH' && $_isChild ) ? $argsRef : $argsRef->{$key} ;
-  
+
  if (ref($attribute->{value}) eq 'HASH')
   {
    for (keys(%{$attribute->{value}}))
@@ -317,6 +338,12 @@ sub _checkAttributes {
   {
    $verbIs = $verbAre = 'would be';
    $_countUp = 1;
+   
+   if ($attribute->{writeAccess} <= 0)
+    {
+     $key = $_isChild ? $_parentkey : $key;
+     croak "The '$key' structure is write protected!";
+    }
   }
  else
   {

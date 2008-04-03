@@ -1,6 +1,7 @@
 package OOP::Accessor;
 
 use Carp;
+use strict;
 
 sub getProperty {
 
